@@ -13,7 +13,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import {PointAccessor} from './data';
+import {DataSet, PointAccessors3D} from './data';
 import {HoverContext} from './hoverContext';
 import {LabelRenderParams, RenderContext} from './renderContext';
 import {ScatterPlotVisualizer} from './scatterPlotVisualizer';
@@ -42,19 +42,13 @@ const ORTHO_CAMERA_FRUSTUM_HALF_EXTENT = 1.2;
 const SHIFT_KEY = 16;
 const CTRL_KEY = 17;
 
-const START_CAMERA_POS_3D = new THREE.Vector3(0.6, 1.0, 1.85);
+const START_CAMERA_POS_3D = new THREE.Vector3(0.45, 0.9, 1.6);
 const START_CAMERA_TARGET_3D = new THREE.Vector3(0, 0, 0);
 const START_CAMERA_POS_2D = new THREE.Vector3(0, 0, 1);
 const START_CAMERA_TARGET_2D = new THREE.Vector3(0, 0, 0);
 
 const ORBIT_MOUSE_ROTATION_SPEED = 1;
 const ORBIT_ANIMATION_ROTATION_CYCLE_IN_SECONDS = 7;
-
-/** The spacial data of points and lines that will be shown in the projector. */
-export interface DataSet {
-  points: DataPoint[];
-  traces: DataTrace[];
-}
 
 /**
  * Points in 3D space that will be used in the projector. If the projector is
@@ -102,7 +96,6 @@ export class ScatterPlot {
   private selectionContext: SelectionContext;
   private hoverContext: HoverContext;
 
-  private spriteImage: HTMLImageElement;
   private containerNode: HTMLElement;
   private visualizers: ScatterPlotVisualizer[] = [];
 
@@ -110,7 +103,7 @@ export class ScatterPlot {
   private onCameraMoveListeners: OnCameraMoveListener[] = [];
 
   // Accessors for rendering and labeling the points.
-  private pointAccessors: [PointAccessor, PointAccessor, PointAccessor];
+  private pointAccessors: PointAccessors3D;
 
   // Scaling functions for each axis.
   private xScale: d3.scale.Linear<number, number>;
@@ -134,6 +127,7 @@ export class ScatterPlot {
 
   private cameraDef: CameraDef = null;
   private camera: THREE.Camera;
+  private orbitAnimationOnNextCameraCreation: boolean = false;
   private orbitCameraControls: any;
   private orbitAnimationId: number;
 
@@ -162,7 +156,8 @@ export class ScatterPlot {
     this.zScale = d3.scale.linear();
 
     this.scene = new THREE.Scene();
-    this.renderer = new THREE.WebGLRenderer();
+    this.renderer =
+        new THREE.WebGLRenderer({alpha: true, premultipliedAlpha: false});
     this.renderer.setClearColor(BACKGROUND_COLOR, 1);
     this.containerNode.appendChild(this.renderer.domElement);
     this.light = new THREE.PointLight(0xFFECBF, 1, 0);
@@ -316,6 +311,9 @@ export class ScatterPlot {
     this.orbitCameraControls.minDistance = MIN_ZOOM;
     this.orbitCameraControls.maxDistance = MAX_ZOOM;
     this.orbitCameraControls.update();
+    if (this.orbitAnimationOnNextCameraCreation) {
+      this.startOrbitAnimation();
+    }
   }
 
   private onClick(e?: MouseEvent, notify = true) {
@@ -375,7 +373,6 @@ export class ScatterPlot {
    * hoverlisteners (usually called from embedding.ts)
    */
   private onMouseMove(e: MouseEvent) {
-    this.stopOrbitAnimation();
     if (!this.dataSet) {
       return;
     }
@@ -574,8 +571,10 @@ export class ScatterPlot {
   }
 
   /** Sets parameters for the next camera recreation. */
-  setCameraDefForNextCameraCreation(def: CameraDef) {
+  setCameraParametersForNextCameraCreation(
+      def: CameraDef, orbitAnimation: boolean) {
     this.cameraDef = def;
+    this.orbitAnimationOnNextCameraCreation = orbitAnimation;
   }
 
   /** Gets the current camera position. */
@@ -633,7 +632,7 @@ export class ScatterPlot {
   addVisualizer(visualizer: ScatterPlotVisualizer) {
     this.visualizers.push(visualizer);
     if (this.dataSet) {
-      visualizer.onDataSet(this.dataSet, this.spriteImage);
+      visualizer.onDataSet(this.dataSet);
     }
     if (this.labelAccessor) {
       visualizer.onSetLabelAccessor(this.labelAccessor);
@@ -661,13 +660,12 @@ export class ScatterPlot {
   }
 
   /** Sets the data for the scatter plot. */
-  setDataSet(dataSet: DataSet, spriteImage: HTMLImageElement) {
+  setDataSet(dataSet: DataSet) {
     this.removeAll();
     this.dataSet = dataSet;
-    this.spriteImage = spriteImage;
     this.nearestPoint = null;
     this.visualizers.forEach(v => {
-      v.onDataSet(dataSet, spriteImage);
+      v.onDataSet(dataSet);
     });
     this.render();
   }
@@ -720,8 +718,7 @@ export class ScatterPlot {
     this.renderer.render(this.scene, this.camera);
   }
 
-  setPointAccessors(pointAccessors:
-                        [PointAccessor, PointAccessor, PointAccessor]) {
+  setPointAccessors(pointAccessors: PointAccessors3D) {
     this.pointAccessors = pointAccessors;
   }
 

@@ -548,7 +548,7 @@ r0.8 and earlier to fetch the protobuf library that TensorFlow depends on.
 
 #### Install Bazel
 
-Follow instructions [here](http://bazel.io/docs/install.html) to install the
+Follow instructions [here](http://bazel.build/docs/install.html) to install the
 dependencies for bazel. Then download the latest stable bazel version using the
 [installer for your system](https://github.com/bazelbuild/bazel/releases) and
 run the installer as mentioned there:
@@ -579,7 +579,7 @@ In order to build or run TensorFlow with GPU support, both NVIDIA's Cuda Toolkit
 (>= 7.0) and cuDNN (>= v3) need to be installed.
 
 TensorFlow GPU support requires having a GPU card with NVidia Compute Capability
->= 3.0.  Supported cards include but are not limited to:
+(>= 3.0).  Supported cards include but are not limited to:
 
 * NVidia Titan
 * NVidia Titan X
@@ -622,7 +622,7 @@ and installing python dependencies using easy_install or pip.
 
 #### Dependencies
 
-Follow instructions [here](http://bazel.io/docs/install.html) to install the
+Follow instructions [here](http://bazel.build/docs/install.html) to install the
 dependencies for bazel. You can then use homebrew to install bazel:
 
 ```bash
@@ -893,6 +893,7 @@ To install its prerequisites, [see
 here](https://github.com/google/protobuf/blob/master/src/README.md):
 
 Then:
+
 ```bash
 $ git clone https://github.com/google/protobuf.git
 $ cd protobuf
